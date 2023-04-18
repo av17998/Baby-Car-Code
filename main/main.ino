@@ -194,6 +194,7 @@ void setup() {
 
 void loop() {
   run();
+  //delay(500);
 }
 
 
