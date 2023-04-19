@@ -26,6 +26,7 @@ SOFTWARE.
 ////////////////////////////////////consttruct/destruct
 void HCSR04::init(int out, int echo[], int n)
 {
+	//class members being assigned to input values
 	this->out = out;
 	this->echo = echo;
 	this->n = n;
@@ -48,9 +49,12 @@ float HCSR04::dist(int n) const
 	digitalWrite(this->out, HIGH);
 	delayMicroseconds(10);
 	digitalWrite(this->out, LOW);
+	//limits teh amount of operations that can take place while this code is running
 	noInterrupts();
+	// pulseIn(pin, value to measure, time between reads(microseconds))
 	float d = pulseIn(this->echo[n], HIGH, 23529.4); // max sensor dist ~4m
 	interrupts();
+	//Converts to cm
 	return d / 58.8235;
 }
 float HCSR04::dist() const { return this->dist(0); }

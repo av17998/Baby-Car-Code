@@ -68,8 +68,7 @@ HCSR04 sw(swTrig, swEcho);
 
 //Stop function spools down motors 
 void stop(void){
-  
-  for (int i = 255; i >= 0; i-=15) {
+  for (int i = 255; i >= 0; i-=35) {
 		analogWrite(enA, i);
 		analogWrite(enB, i);
 		delay(20);
@@ -134,6 +133,7 @@ void run(void){
     //Checking if the back sensors are blocked while going backwards
     if (swDistance < 12 || sDistance < 12 || seDistance < 12){
         stop();
+        delay(60);
     }else{
         //Power for the motors is the y coordinate minus the modifier if the user wants to turn
         //If the joystick is at (255,255) in theory the right motor will be powered to 0 and the left to 255
@@ -143,11 +143,13 @@ void run(void){
         digitalWrite(in2, HIGH);
         digitalWrite(in3, LOW);
         digitalWrite(in4, HIGH);
+        delay(60);
     } 
   } else if (ycoordinate > 15){
     //Checking if the front sensors are blocked while driving forward
     if (nwDistance < 12 || nDistance < 12 || neDistance < 12){
         stop();
+        delay(60);
     }else{
         //Same thing here as before
         analogWrite(enA, abs(ycoordinate) - abs(rightTurn));
@@ -155,7 +157,8 @@ void run(void){
         digitalWrite(in1, HIGH);
         digitalWrite(in2, LOW);
         digitalWrite(in3, HIGH);
-        digitalWrite(in4, LOW); 
+        digitalWrite(in4, LOW);
+        delay(60); 
     }
   } else{
     //If the joystick is neutral then turn off power
@@ -169,7 +172,7 @@ void run(void){
 }
 
 void setup() {
-  //All the macros make this section way less annoying to write
+  //Macros being used for simplified pin setup
   SETUPSENSORPIN(nw)
   SETUPSENSORPIN(n)
   SETUPSENSORPIN(ne)
@@ -193,7 +196,9 @@ void setup() {
 }
 
 void loop() {
+  //actual running code
   run();
+  //commented out for final version, uncomment for testing purposes
   //delay(500);
 }
 
