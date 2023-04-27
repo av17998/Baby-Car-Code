@@ -32,13 +32,13 @@ TO IMPLEMENT:
 #define swEcho 33
 
 // Motor A connections
-#define enA 5
-#define in1 7
-#define in2 6
+#define enA 40
+#define in1 34
+#define in2 36
 // Motor B connections
-#define enB 2
-#define in3 4
-#define in4 3
+#define enB 37
+#define in3 39
+#define in4 38
 
 // Joystick Pins
 #define xpin 0
