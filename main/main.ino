@@ -7,13 +7,16 @@
 
 #define CMCONVERSION 0.393701
 
-#define trig 2
+//#define trig 2
+// Trigger pins for each bank of sensors
+#define trign 2
+#define trigs 3
 //Northwest Sensor
 #define nwEcho 5
 //North Sensor
 #define nEcho 6
 //Northeast Sensor
-#define neEcho 27
+#define neEcho 7
 //Southeast Sensor
 #define seEcho 8
 //South Sensor
@@ -37,10 +40,17 @@
 // Ratio of max joystick value to the max motor power value
 #define joystickRatio 0.56792
 
+// Neutral stick values so that the joystick inputs can be read properly, allows for neg and pos position values for both 
+// coordinates
+#define xneutral 503
+#define yneutral 511
+
 //The main difference of the branches is here. By using a different class constructor, we can use one common trigger pin
-//for all the sensors rather than two dedicated pins for every sensor. 12 pins becomes 7, making the board design simpler
-int pins[6] = {nwEcho, nEcho, neEcho, seEcho, sEcho, seEcho};
-HCSR04 sensors(trig, pins, 6);
+//for each bank of sensors rather than two dedicated pins for every sensor. 12 pins becomes 8, making the board design simpler
+
+//HCSR04 sensors(trig, (int[6]) {nwEcho, nEcho, neEcho, seEcho, sEcho, seEcho}, 6);
+HCSR04 north(trign, (int[3]) {nwEcho, nEcho, neEcho}, 3);
+HCSR04 south(trigs, (int[3]) {swEcho, sEcho, seEcho}, 3);
 
 #define SETUPMOTORPIN(d)   pinMode(d, OUTPUT);
 
@@ -72,13 +82,14 @@ void setup(){
     Serial.begin(9600); 
 }
 
-void stop(void){
-  for (int i = 255; i >= 0; i-=35) {
-		analogWrite(enA, i);
-		analogWrite(enB, i);
-		delay(20);
-	}
-  
+void stop(int power){
+    if (power < 0){
+        for (int i = power; i >= 0; i-=35) {
+	        analogWrite(enA, i);
+	        analogWrite(enB, i);
+		    delay(20);
+	    } 
+    }
 }
 
 //Run code
@@ -99,12 +110,12 @@ void run(void){
 
     //Calling the objects initialized previously to check the distance read on each sensor then multiplying by the conversion
     //to get inches from centimeters
-    nwDistance = (sensors.dist(0) * CMCONVERSION);
-    nDistance = (sensors.dist(1) * CMCONVERSION);
-    neDistance = (sensors.dist(2) * CMCONVERSION);
-    seDistance = (sensors.dist(3) * CMCONVERSION);
-    sDistance = (sensors.dist(4) * CMCONVERSION);
-    swDistance = (sensors.dist(5) * CMCONVERSION);
+    nwDistance = (north.dist(0) * CMCONVERSION);
+    nDistance = (north.dist(1) * CMCONVERSION);
+    neDistance = (north.dist(2) * CMCONVERSION);
+    swDistance = (south.dist(0) * CMCONVERSION);
+    sDistance = (south.dist(1) * CMCONVERSION);
+    seDistance = (south.dist(2) * CMCONVERSION);
 
     //When testing motors or testing without sensors keep this code uncommented
     //Comment out to test specific sensors
@@ -121,8 +132,8 @@ void run(void){
 
     //Converting y and x pin values to coordinates from -255 to 255
     //This code has fine tuned values that would need to be changed on a car by car basis. 
-    int16_t ycoordinate = (yval - 511) * joystickRatio;
-    int16_t xcoordinate = (xval - 503) * joystickRatio;
+    int16_t ycoordinate = (yval - yneutral) * joystickRatio;
+    int16_t xcoordinate = (xval - xneutral) * joystickRatio;
 
     //Checking the x coordinate from the joystick to see if hte user wants to turn
     if (xcoordinate < -20){
@@ -133,17 +144,21 @@ void run(void){
         leftTurn = abs(xcoordinate) - 10;
         rightTurn = 0;
     }
-    
+    int powerRight = 0;
+    int powerLeft = 0;
+
     if (ycoordinate < -15){
         //Checking if the back sensors are blocked while going backwards
         if (swDistance < 12 || sDistance < 12 || seDistance < 12){
-            stop();
+            stop(powerLeft);
             delay(60);
         }else{
             //Power for the motors is the y coordinate minus the modifier if the user wants to turn
             //If the joystick is at (255,255) in theory the right motor will be powered to 0 and the left to 255
-            analogWrite(enA, abs(ycoordinate) - abs(rightTurn));
-            analogWrite(enB, abs(ycoordinate) - abs(leftTurn));
+            powerRight = abs(ycoordinate) - abs(rightTurn);
+            powerLeft = abs(ycoordinate) - abs(leftTurn);
+            analogWrite(enA, powerRight);
+            analogWrite(enB, powerLeft);
             digitalWrite(in1, LOW);
             digitalWrite(in2, HIGH);
             digitalWrite(in3, LOW);
@@ -153,12 +168,14 @@ void run(void){
     } else if (ycoordinate > 15){
         //Checking if the front sensors are blocked while driving forward
         if (nwDistance < 12 || nDistance < 12 || neDistance < 12){
-            stop();
+            stop(powerLeft);
             delay(60);
         }else{
             //Same thing here as before
-            analogWrite(enA, abs(ycoordinate) - abs(rightTurn));
-            analogWrite(enB, abs(ycoordinate) - abs(leftTurn));
+            powerRight = abs(ycoordinate) - abs(rightTurn);
+            powerLeft = abs(ycoordinate) - abs(leftTurn);
+            analogWrite(enA, powerRight);
+            analogWrite(enB, powerLeft);
             digitalWrite(in1, HIGH);
             digitalWrite(in2, LOW);
             digitalWrite(in3, HIGH);
@@ -188,5 +205,5 @@ void loop()
         Serial.print("\n"); //return curent distance (cm) in serial for sensor 1 to 6
         delay(1000);
         */
-        }                       // we suggest to use over 60ms measurement cycle, in order to prevent trigger signal to the echo signal.
+        }
 }
