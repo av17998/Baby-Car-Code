@@ -25,12 +25,12 @@
 #define swEcho 10
 
 // Motor A connections
-#define enA 40
-#define in1 34
-#define in2 36
+#define enA 44
+#define in1 32
+#define in2 34
 // Motor B connections
-#define enB 37
-#define in3 39
+#define enB 46
+#define in3 36
 #define in4 38
 
 // Joystick Pins
@@ -42,8 +42,8 @@
 
 // Neutral stick values so that the joystick inputs can be read properly, allows for neg and pos position values for both 
 // coordinates
-#define xneutral 503
-#define yneutral 511
+#define xneutral 500
+#define yneutral 500
 
 //The main difference of the branches is here. By using a different class constructor, we can use one common trigger pin
 //for each bank of sensors rather than two dedicated pins for every sensor. 12 pins becomes 8, making the board design simpler
@@ -57,8 +57,10 @@ HCSR04 south(trigs, (int[3]) {swEcho, sEcho, seEcho}, 3);
 #define SETPOWER(d)  digitalWrite(d, LOW);
 
 void setup(){ 
-    pinMode(trig, OUTPUT);
-    digitalWrite(trig, LOW);
+    pinMode(trign, OUTPUT);
+    pinMode(trigs, OUTPUT);
+    digitalWrite(trign, LOW);
+    digitalWrite(trigs, LOW);
 
     pinMode(nwEcho, INPUT);
     pinMode(nEcho, INPUT);
@@ -83,10 +85,12 @@ void setup(){
 }
 
 void stop(int power){
-    if (power < 0){
+    //Serial.print("Stopping\n");
+    if (power >= 0){
         for (int i = power; i >= 0; i-=35) {
 	        analogWrite(enA, i);
 	        analogWrite(enB, i);
+            //Serial.print("Stopping\n");
 		    delay(20);
 	    } 
     }
@@ -94,6 +98,7 @@ void stop(int power){
 
 //Run code
 void run(void){
+    
     //Local variable initialization 
     double yval = 0;
     double xval = 0;
@@ -146,15 +151,18 @@ void run(void){
     }
     int powerRight = 0;
     int powerLeft = 0;
-
-    if (ycoordinate < -15){
+    if (ycoordinate < -45){
         //Checking if the back sensors are blocked while going backwards
-        if (swDistance < 12 || sDistance < 12 || seDistance < 12){
+        //Serial.print("Working?\n");
+        //Serial.println((int)sDistance);
+        //Serial.println(powerLeft);
+        if (swDistance <= 12 || sDistance <= 12 || seDistance <= 12){
             stop(powerLeft);
             delay(60);
         }else{
             //Power for the motors is the y coordinate minus the modifier if the user wants to turn
             //If the joystick is at (255,255) in theory the right motor will be powered to 0 and the left to 255
+            //Serial.print("Driving?\n");
             powerRight = abs(ycoordinate) - abs(rightTurn);
             powerLeft = abs(ycoordinate) - abs(leftTurn);
             analogWrite(enA, powerRight);
@@ -163,9 +171,8 @@ void run(void){
             digitalWrite(in2, HIGH);
             digitalWrite(in3, LOW);
             digitalWrite(in4, HIGH);
-            delay(60);
         } 
-    } else if (ycoordinate > 15){
+    } else if (ycoordinate > 45){
         //Checking if the front sensors are blocked while driving forward
         if (nwDistance < 12 || nDistance < 12 || neDistance < 12){
             stop(powerLeft);
@@ -180,7 +187,6 @@ void run(void){
             digitalWrite(in2, LOW);
             digitalWrite(in3, HIGH);
             digitalWrite(in4, LOW);
-            delay(60); 
         }
     } else{
         //If the joystick is neutral then turn off power
@@ -195,15 +201,18 @@ void run(void){
 
 void loop()
 {
+    run();
+    /*
     for (int i = 0; i < 6; i++ ){
-        run();
-        /*
+        
+        
         Serial.print("Pin");
         Serial.print(i); 
         Serial.print(" = ");
         Serial.print(sensors.dist(i));
         Serial.print("\n"); //return curent distance (cm) in serial for sensor 1 to 6
         delay(1000);
-        */
+        
         }
+        */
 }
